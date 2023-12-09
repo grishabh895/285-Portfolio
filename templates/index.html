@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            margin: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #f7f7f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            position: relative;
+            width: 400px;
+            height: 550px;
+            border-radius: 10px;
+            padding: 20px;
+            box-sizing: border-box;
+            background: #ffffff;
+            box-shadow: 6px 6px 10px #cccccc, -6px -6px 10px #ffffff;
+        }
+
+        .inputs {
+            text-align: left;
+            margin-top: 20px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #333333;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cccccc;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+
+        input[type="submit"] {
+            background: #3498db;
+            color: #ffffff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        input[type="submit"]:hover {
+            background: #277db1;
+        }
+
+        h2 {
+            color: #333333;
+            font-size: 24px;
+        }
+
+        b {
+            color: #555555;
+        }
+
+        i {
+            color: red;
+        }
+        /* Additional styles for the chart container */
+        .chart-container {
+            margin-top: 20px;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <form action="/" method="POST">
+            <h2>Stock Portfolio</h2>
+            <label for="invest_amount">Enter Investment Amount (USD):</label>
+            <input name="invest_amount" type="text" />
+            <br><br>
+            <label for="strategy">Select Investment Strategy:</label>
+            <select name="strategy">
+                <option value="Ethical Investing">Ethical Investing</option>
+                <option value="Value Investing">Value Investing</option>
+            </select>
+            <br><br>
+            <input type="submit" value="Generate Portfolio" />
+        </form>
+        <div>
+            {% if request.method == "POST" and error == "success" %}
+                <h2>Portfolio Information:</h2>
+                <b>Selected Stocks:</b> {{selected_stocks}}<br>
+                <b>Allocation per Stock:</b> {{allocation_per_stock}}<br>
+                <b>Overall Portfolio Value:</b> {{portfolio_value}}<br>
+                <br>
+                <h3>Portfolio Composition</h3>
+                <ul>
+                    {% for item in portfolio_composition %}
+                        <li>
+                            <strong>Symbol:</strong> {{ item.symbol }}<br>
+                            <strong>Company Name:</strong> {{ item.company_name }}<br>
+                            <strong>Current Price:</strong> {{ item.current_price }}<br>
+                            <strong>Shares to Buy:</strong> {{ item.shares_to_buy }}<br>
+                            <!-- <strong>Last 5 Days Closing Prices:</strong>
+                            <ul>
+                                {% for date, price in item.result.items() %}
+                                    <li>{{ date }}: {{ price }}</li>
+                                {% endfor %}
+                            </ul> -->
+                        </li>
+                    {% endfor %}
+                </ul>
+                <br>
+                <h3>Weekly Trend:</h3>
+                <!-- <h3>Weekly Trend:</h3> -->
+
+                <!-- Loop through portfolio_composition and add chart for each stock -->
+                <div class="chart-container">
+                    {% for item in portfolio_composition %}
+                        <h4>{{ item.symbol }} Weekly Trend</h4>
+                        <canvas id="chart-{{ item.symbol|safe }}" width="400" height="200"></canvas>
+                        <script>
+                            document.addEventListener("DOMContentLoaded", function() {
+                                var resultData = {{ item.result|safe }};
+                                var dates = Object.keys(resultData).map(function(dateString) {
+                                    var date = new Date(dateString);
+                                    date.setDate(date.getDate() + 1);
+                                    var day = date.getDate();
+                                    var monthNames = [
+                                        "Jan", "Feb", "Mar",
+                                        "Apr", "May", "Jun", "Jul",
+                                        "Aug", "Sep", "Oct",
+                                        "Nov", "Dec"
+                                    ];
+                                    var monthIndex = date.getMonth();
+                                    return day + '-' + monthNames[monthIndex];
+                                }).reverse();  // Reverse the order of dates
+                
+                                var data = Object.values(resultData).reverse();  // Reverse the order of data
+                
+                                var ctx = document.getElementById('chart-{{ item.symbol|safe }}').getContext('2d');
+                                var chart = new Chart(ctx, {
+                                    type: 'line',
+                                    data: {
+                                        labels: dates,
+                                        datasets: [{
+                                            label: 'Closing Prices',
+                                            data: data,
+                                            borderColor: 'rgba(75, 192, 192, 1)',
+                                            borderWidth: 1,
+                                            fill: false,
+                                            pointRadius: 5,
+                                            pointBackgroundColor: 'rgba(75, 192, 192, 1)'
+                                        }]
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        scales: {
+                                            x: [{
+                                                type: 'linear',
+                                                position: 'bottom',
+                                                ticks: {
+                                                    stepSize: 1
+                                                }
+                                            }],
+                                            y: [{
+                                                type: 'linear',
+                                                position: 'left'
+                                            }]
+                                        }
+                                    }
+                                });
+                            });
+                        </script>
+                    {% endfor %}
+                </div>
+                           
+                 
+                <!-- Add code to display the weekly trend here -->
+            {% endif %}
+            {% if request.method == "POST" and error != "" %}
+                <b style="color: red;"><i>Error: {{error}}</i></b>
+            {% endif %}
+        </div>
+    </div>
+</body>
+
+</html>
